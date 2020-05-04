@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import pygame, sys
+import pygame, sys, os
 from pygame.locals import *
 import vector as Vect2
 
@@ -10,8 +10,47 @@ class GObject(Vect2.vector):
 	def __init__(self, x = 0, y = 0):
 		super(GObject, self).__init__(x, y)
 
+	@property
+	def position(self):
+		return self.real_poss()
+
 	def __repr__(self):
 		return f"GObject[{hex(self.id)}]({self.x}, {self.y})"
+
+class GImage(GObject):
+	def __init__(self, x = 0, y = 0, src=None):
+		super(GImage, self).__init__(x, y)
+
+		self.size = 1
+
+		if os.path.exists(src):
+			self.__src = src
+			self.__image = pygame.image.load(self.__src)
+			self.__imagel = self.__image.copy()
+		else:
+			raise FileNotFoundError(f"Imagen '{self.__src}' No encontrada")
+
+
+
+	@property
+	def src(self):
+		return self.__src
+
+	def __repr__(self):
+		return f"GImage[{self.__src}]({self.x}, {self.y})"
+
+
+	def draw(self):
+		self.__imagel = pygame.transform.scale(self.__image, (int(self.__image.get_width() * self.size), int(self.__image.get_height()* self.size)))
+
+		_ = self.__imagel.get_rect()
+		_p = self.position
+
+		_.left = _p.x
+		_.top = _p.y
+
+		GGame.window.blit(self.__imagel, _)
+	
 
 class GGame:
 	back_color = (0, 0, 0)
@@ -30,19 +69,39 @@ class GGame:
 		group = {}
 
 		@classmethod
+		def is_print(cls, key):
+			is_min = key>=ord('a') and key<=ord('z')
+			is_may = key>=ord('A') and key<=ord('Z')
+			is_space_line = key == ord(' ') or key == ord('\n')
+
+			return is_min or is_may or is_space_line
+
+		@classmethod
+		def get_prints(cls):
+			_ = []
+			for i in cls.group:
+				if cls.is_print(i) and cls.down(i):
+					_.append(chr(i))
+
+			return _
+
+		@classmethod
 		def down(cls, key):
 			if key in cls.group:
 				return cls.group[key] == 0
+			return False
 
 		@classmethod
 		def press(cls, key):
 			if key in cls.group:
 				return cls.group[key] > 0
+			return False
 
 		@classmethod
 		def up(cls, key):
 			if key in cls.group:
 				return cls.group[key] == -1
+			return False
 
 		@classmethod
 		def loop_event(cls, event):
@@ -103,20 +162,25 @@ class GGame:
 
 if __name__ == '__main__':
 
-	A = GObject(3, 0)
-	B = GObject(3, 5)
-	C = GObject(2, 6)
-	D = GObject(3, 6)
-
-	A.set_node(B)
-	B.set_node(C)
-	C.set_node(D)
-	D.set_node(A)
+	A = GImage(0, 0, "image.png")
+	A.size = 0.25
 
 	def loopfun():
-		if GGame.keys.up(ord('q')):
+		A.draw()
+
+		
+		A.y += GGame.keys.press(K_DOWN)
+		A.y -= GGame.keys.press(K_UP)
+
+		A.x += GGame.keys.press(K_RIGHT)
+		A.x -= GGame.keys.press(K_LEFT)
+
+		if GGame.keys.up(K_ESCAPE):
 			print("Fin Putosss")
 			GGame.exit()
+
+		for i in GGame.keys.get_prints():
+			print(end=i)
 	
 	GGame.createWindow(640, 480)
 

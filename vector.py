@@ -22,8 +22,8 @@ class vector:
 		return self.__node
 
 	def real_poss(self):
-		if self.node:
-			return self.poss + self.node.real_poss()
+		if self.__node:
+			return self.poss + self.__node.real_poss()
 		else:
 			return self.poss
 		
